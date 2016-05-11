@@ -8,59 +8,6 @@ Procs == 1..N
     variable timeOut = [i \in Procs |-> 1], pings = [i \in Procs |-> 0], 
             view = 0, primary = 0, backup = 0, pendingAck = FALSE, serverViewNum = [i \in Procs |-> 0];
 
-\*    procedure ping(server, serverView) {
-\*        p1: timeOut[self] := 0;
-\*            pings[self] := pings[self] + 1;
-\*            if(serverView = 0) {
-\*                if(server = primary) {
-\*                    primary := backup;
-\*                    backup := 0;
-\*                    view := view + 1;
-\*                    pendingAck := TRUE;
-\*                } else if(server = backup) {
-\*                    backup := 0;
-\*                }
-\*            };
-\*            if(pendingAck = TRUE) {
-\*                if(server = primary) {
-\*                    if(view = serverView) {
-\*                        p2: pendingAck := FALSE;
-\*\*                        i := {j \in Procs: y \in Procs: pings[j] >= pings[y]};
-\*\*                        if(timeOut[i] # 1) {
-\*\*                            backup := i;
-\*\*                            view := view + 1;
-\*\*                            pendingAck := TRUE;
-\*\*                          }
-\*                        p3: with (i = {j \in Procs: {y \in Procs: pings[j] >= pings[y]}}) {
-\*                          if(timeOut[i] # 1) {
-\*                            backup := i;
-\*                            view := view + 1;
-\*                            pendingAck := TRUE;
-\*                          }
-\*                          }
-\*                    }
-\*                }
-\*            } else {
-\*                if(primary = 0) {
-\*                    p4: with (i = {j \in Procs: {y \in Procs : pings[j] >= pings[y]}}) {
-\*                          if(timeOut[i] # 1) {
-\*                            primary := i;
-\*                            view := view + 1;
-\*                            pendingAck := TRUE;
-\*                          }
-\*                        }
-\*                } else if(backup = 0) {
-\*                    p5: with (i = {j \in Procs : { y \in Procs : pings[j] >= pings[y]}}) {
-\*                          if(timeOut[i] # 1) {
-\*                            backup := i;
-\*                            view := view + 1;
-\*                            pendingAck := TRUE;
-\*                          }
-\*                          }
-\*                }
-\*            }
-\*    }
-        
         \* View Service
         fair process(vs = 0)
             { vs: while (TRUE) {
@@ -111,12 +58,6 @@ Procs == 1..N
                 if(self = primary) {
                     if(view = serverViewNum[self]) {
                         p2: pendingAck := FALSE;
-\*                        i := {j \in Procs: y \in Procs: pings[j] >= pings[y]};
-\*                        if(timeOut[i] # 1) {
-\*                            backup := i;
-\*                            view := view + 1;
-\*                            pendingAck := TRUE;
-\*                          }
                         p3: with (i = {j \in Procs: {y \in Procs: pings[j] >= pings[y]}}) {
                           if(timeOut[i] # 1) {
                             backup := i;
@@ -229,9 +170,7 @@ server(self) == /\ pc[self] = "server"
 \*                /\ PrintT("server")
                 /\ \/ /\ timeOut' = [timeOut EXCEPT ![self] = 1]
                       /\ pc' = [pc EXCEPT ![self] = "server"]
-\*                      /\ PrintT("Here1")
                    \/ /\ pc' = [pc EXCEPT ![self] = "p1"]
-\*                      /\ PrintT("Here1")
                       /\ UNCHANGED timeOut
                 /\ UNCHANGED << pings, view, primary, backup, pendingAck, 
                                 serverViewNum >>
@@ -294,9 +233,7 @@ p4(self) == /\ pc[self] = "p4"
 \*            /\ PrintT(view)
 \*            /\ PrintT(serverViewNum)
             /\ LET 
-\*            k == {j \in Procs /\ y \in Procs : j # y /\ pings[j] >= pings[y]} 
                    i == CHOOSE j \in Procs: \A y \in Procs: pings[j] >= pings[y] 
-\*                 /\ PrintT(i)
                  IN IF timeOut[i] # 1
                     THEN /\ primary' = i
                          /\ view' = view + 1
@@ -310,7 +247,6 @@ p5(self) == /\ pc[self] = "p5"
 \*            /\ PrintT(self)
 \*            /\ PrintT("p5")
             /\ LET i == CHOOSE j \in Procs: \A y \in Procs: pings[j] >= pings[y] IN 
-\*               i == {j \in Procs : { y \in Procs : pings[j] >= pings[y]}} IN
                  IF timeOut[i] # 1
                     THEN /\ backup' = i
                          /\ view' = view + 1
@@ -329,7 +265,6 @@ p6(self) == /\ pc[self] = "p6"
 
 p(self) == server(self) \/ p1(self) \/ p2(self) \/ p3(self) \/ p4(self)
               \/ p5(self) \/ p6(self)
-\*p(self) == server(self)             
 
 Next == vs
            \/ (\E self \in Procs: p(self))
